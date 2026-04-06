@@ -1,15 +1,21 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-require('dotenv').config();
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
 
-const JWT_SECRET = process.env.JWT_SECRET || "secretkey";
-function requireAuth(req, res, next) {
-   ...
-}
-function requireManager(req, res, next) {
-   ...
-}
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+    }
 
-function requireAdmin(req, res, next) {
-   ...
-}
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+
+    res.json({ token, user });
+});
